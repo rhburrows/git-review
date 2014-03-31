@@ -1,0 +1,108 @@
+#!/bin/sh
+#
+# git-review
+#
+# Copyright (C) 2014 Ryan Burrows <rhburrows@gmail.com>
+#
+usage() {
+    cat <<EOF
+usage: git review <command> [<args>]
+
+Halp me!
+EOF
+}
+
+PATH=$PATH:$(git --exec-path)
+. git-sh-setup
+
+require_clean_work_tree
+
+require_in_review() {
+    test -f "$GIT_DIR/ACTIVE_REVIEW" || die "No active review. Please use \`git review [<revision range>]\`"
+}
+
+abort_review() {
+    original_commit=$(cat $GIT_DIR/ACTIVE_REVIEW | grep ^START: | sed s/^START://)
+    git checkout -q "$original_commit"
+    rm $GIT_DIR/ACTIVE_REVIEW
+}
+
+start_review() {
+    commits=$(git rev-parse "$1")
+    commit_count=$(echo "$commits" | wc -l)
+
+    from=
+    to=
+    start=
+    branch=$(git branch | grep ^* | cut -d' ' -f2)
+    if echo "$branch" | grep -q detached; then
+        start=$(git rev-parse HEAD)
+    else
+        start="$branch"
+    fi
+    if [ "$commit_count" -eq 2 ]; then
+        from=$(echo "$commits" | tail -n 1 | sed 's/\^//')
+        to=$(echo "$commits" | head -n 1)
+    else
+        from="$commits"
+        to=$(git rev-parse HEAD)
+    fi
+
+    echo "FROM:$from" >  $GIT_DIR/ACTIVE_REVIEW
+    echo "TO:$to" >> $GIT_DIR/ACTIVE_REVIEW
+    echo "START:$start" >> $GIT_DIR/ACTIVE_REVIEW
+
+    short_from=$(echo "$from" | sed 's/\(.......\).*/\1/')
+    short_to=$(echo "$to" | sed 's/\(.......\).*/\1/')
+
+    echo "Beginning review from $short_from to $short_to"
+    echo
+    git checkout -q "$from"
+}
+
+show_diff() {
+    git diff HEAD^ HEAD
+}
+
+print_commit_message() {
+    from=$(git rev-parse HEAD | sed 's/\(.......\).*/\1/')
+    echo "Commit: $from"
+    git log --format=%B -n 1 HEAD
+}
+
+next_commit() {
+    current=$(git rev-parse HEAD)
+    to=$(cat $GIT_DIR/ACTIVE_REVIEW | grep ^TO: | sed s/^TO://)
+    next=$(git rev-list --reverse "$current".."$to" | head -n 1)
+
+    git checkout -q "$next"
+}
+
+prev_commit() {
+    git checkout -q HEAD^
+}
+
+case "$1" in
+    next)
+        require_in_review
+        next_commit
+        print_commit_message
+        ;;
+    diff)
+        require_in_review
+        show_diff
+        ;;
+    prev)
+        require_in_review
+        prev_commit
+        print_commit_message
+        ;;
+    abort)
+        require_in_review
+        abort_review
+        ;;
+    *)
+        start_review "$1"
+        print_commit_message
+        ;;
+esac
