@@ -50,3 +50,5 @@ At the moment there are a number of bugs/limitations of this script.
   branching yet
 - It can get stuck if navigating history with dead-ends (e.g. a
   temporary branch that was later deleted)
+- If you try to start a review while it a review it doesn't prevent it
+  and git abort will no longer work properly
