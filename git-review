@@ -103,6 +103,10 @@ case "$1" in
         prev_commit
         print_commit_message
         ;;
+    msg)
+        require_in_review
+        print_commit_message
+        ;;
     abort)
         require_in_review
         abort_review
