@@ -73,9 +73,16 @@ print_commit_message() {
 next_commit() {
     current=$(git rev-parse HEAD)
     to=$(cat $GIT_DIR/ACTIVE_REVIEW | grep ^TO: | sed s/^TO://)
+    start=$(cat $GIT_DIR/ACTIVE_REVIEW | grep ^START: | sed s/^START://)
     next=$(git rev-list --reverse "$current".."$to" | head -n 1)
 
-    git checkout -q "$next"
+    if [ "$current" = "$to" ]; then
+	echo "Review complete. Reverting to original state."
+	abort_review
+    else
+	git checkout -q "$next"
+        print_commit_message
+    fi
 }
 
 prev_commit() {
@@ -86,7 +93,6 @@ case "$1" in
     next)
         require_in_review
         next_commit
-        print_commit_message
         ;;
     diff)
         require_in_review

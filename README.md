@@ -48,7 +48,5 @@ At the moment there are a number of bugs/limitations of this script.
 
 - It only really works with linear history, I haven't dealt with
   branching yet
-- It doesn't auto-complete once it hits the final commit, you have to
-  manually `git review abort`
 - It can get stuck if navigating history with dead-ends (e.g. a
   temporary branch that was later deleted)

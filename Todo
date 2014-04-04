@@ -1,4 +1,3 @@
 - Write usage information
 - Add a message command to replay the current message
-- When Next hits the final commit end the review
 - Handle branches and merges in history
